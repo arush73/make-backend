@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
+import passport from "passport"
 
 const router = Router()
 
@@ -15,6 +16,7 @@ import {
   changeCurrentPassword,
   getCurrentUser,
   updateUserAvatar,
+  handleSocialLogin
 } from "../controllers/auth.controllers.js"
 
 // open routes
@@ -34,30 +36,30 @@ router.route("/current-user").get(verifyJWT, getCurrentUser)
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 
 // SSO routes
-// router.route("/google").get(
-//   passport.authenticate("google", {
-//     scope: ["profile", "email"],
-//   }),
-//   (req, res) => {
-//     res.send("redirecting to google...")
-//   }
-// )
+router.route("/google").get(
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  }),
+  (req, res) => {
+    res.send("redirecting to google...")
+  }
+)
 
-// router.route("/github").get(
-//   passport.authenticate("github", {
-//     scope: ["profile", "email"],
-//   }),
-//   (req, res) => {
-//     res.send("redirecting to github...")
-//   }
-// )
+router.route("/github").get(
+  passport.authenticate("github", {
+    scope: ["profile", "email"],
+  }),
+  (req, res) => {
+    res.send("redirecting to github...")
+  }
+)
 
-// router
-//   .route("/google/callback")
-//   .get(passport.authenticate("google"), handleSocialLogin);
+router
+  .route("/google/callback")
+  .get(passport.authenticate("google"), handleSocialLogin);
 
-// router
-//   .route("/github/callback")
-//   .get(passport.authenticate("github"), handleSocialLogin);
+router
+  .route("/github/callback")
+  .get(passport.authenticate("github"), handleSocialLogin);
 
 export default router

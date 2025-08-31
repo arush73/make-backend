@@ -2,7 +2,13 @@ import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
-import { UserRolesEnum, AvailableUserRoles, USER_TEMPORARY_TOKEN_EXPIRY } from "../constants.js"
+import {
+  UserRolesEnum,
+  AvailableUserRoles,
+  USER_TEMPORARY_TOKEN_EXPIRY,
+  UserLoginType,
+  AvailableSocialLogins,
+} from "../constants.js"
 
 const userSchema = new mongoose.Schema(
   {
@@ -59,6 +65,11 @@ const userSchema = new mongoose.Schema(
     },
     emailVerificationExpiry: {
       type: Date,
+    },
+    loginType: {
+      type: String,
+      enum: AvailableSocialLogins,
+      default: UserLoginType.EMAIL_PASSWORD,
     },
   },
   { timestamps: true }

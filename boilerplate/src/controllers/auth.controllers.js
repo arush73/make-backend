@@ -93,6 +93,17 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!user) throw new ApiError(404, "User does not exist")
 
+  if (user.loginType !== UserLoginType.EMAIL_PASSWORD) {
+    throw new ApiError(
+      400,
+      "You have previously registered using " +
+        user.loginType?.toLowerCase() +
+        ". Please use the " +
+        user.loginType?.toLowerCase() +
+        " login option to access your account."
+    )
+  }
+
   const isPasswordValid = await user.isPasswordCorrect(password)
 
   if (!isPasswordValid) throw new ApiError(400, "invalid credentials")
@@ -341,6 +352,26 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"))
 })
 
+const handleSocialLogin = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user?._id)
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist")
+  }
+
+  const accessToken = generateAccessToken()
+  const refreshToken = generateRefreshToken()
+
+  return res
+    .status(301)
+    .cookie("accessToken", accessToken, cookieOptions) // set the access token in the cookie
+    .cookie("refreshToken", refreshToken, cookieOptions) // set the refresh token in the cookie
+    .redirect(
+      // redirect user to the frontend with access and refresh token in case user is not using cookies
+      `${process.env.CLIENT_SSO_REDIRECT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    )
+})
+
 export {
   registerUser,
   loginUser,
@@ -352,4 +383,5 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateUserAvatar,
+  handleSocialLogin,
 }
