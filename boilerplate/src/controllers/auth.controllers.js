@@ -9,10 +9,12 @@ import {
 import { UserRolesEnum } from "../constants.js"
 import { emailVerificationMailgenContent, sendMail } from "../utils/mail.js"
 
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "Strict",
+const cookieOptions = () => {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  }
 }
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -102,8 +104,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, cookieOptions())
+    .cookie("refreshToken", refreshToken, cookieOptions())
     .json(
       new ApiResponse(200, "User logged in successfully", {
         user: loggedInUser,
@@ -126,9 +128,205 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
+    .clearCookie("accessToken", cookieOptions())
+    .clearCookie("refreshToken", cookieOptions())
     .json(new ApiResponse(200, {}, "User logged out"))
 })
 
-export { registerUser, loginUser, logoutUser }
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { verificationToken } = req.params
+
+  if (!verificationToken) {
+    throw new ApiError(400, "Email verification token is missing")
+  }
+
+  let hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex")
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpiry: { $gt: Date.now() },
+  })
+
+  if (!user) throw new ApiError(489, "Token is invalid or expired")
+
+  user.emailVerificationToken = undefined
+  user.emailVerificationExpiry = undefined
+  user.isEmailVerified = true
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Email is verified", { isEmailVerified: true }))
+})
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+  if (!incomingRefreshToken) throw new ApiError(401, "Unauthorized request")
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    )
+    const user = await User.findById(decodedToken?._id)
+    if (!user) throw new ApiError(401, "Invalid refresh token")
+
+    if (incomingRefreshToken !== user?.refreshToken)
+      throw new ApiError(401, "Refresh token is expired or used")
+
+    const accessToken = user.generateAccessToken()
+    const newRefreshToken = user.generateRefreshToken()
+
+    user.refreshToken = newRefreshToken
+    await user.save()
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions())
+      .cookie("refreshToken", newRefreshToken, cookieOptions())
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token refreshed"
+        )
+      )
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refresh token")
+  }
+})
+
+const forgotPasswordRequest = asyncHandler(async (req, res) => {
+  const { email } = req.body
+
+  const user = await User.findOne({ email })
+
+  if (!user) throw new ApiError(404, "User does not exists", [])
+
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken()
+
+  user.forgotPasswordToken = hashedToken
+  user.forgotPasswordExpiry = tokenExpiry
+  await user.save({ validateBeforeSave: false })
+
+  await sendMail({
+    email: user?.email,
+    subject: "Password reset request",
+    mailgenContent: forgotPasswordMailgenContent(
+      user.username,
+      // ! NOTE: Following link should be the link of the frontend page responsible to request password reset
+      // ! Frontend will send the below token with the new password in the request body to the backend reset password endpoint
+      `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`
+    ),
+  })
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "Password reset mail has been sent on your mail id"
+      )
+    )
+})
+
+const resetForgottenPassword = asyncHandler(async (req, res) => {
+  const { resetToken } = req.params
+  const { newPassword } = req.body
+
+  let hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex")
+
+  const user = await User.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  })
+
+  if (!user) throw new ApiError(489, "Token is invalid or expired")
+
+  user.forgotPasswordToken = undefined
+  user.forgotPasswordExpiry = undefined
+
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully"))
+})
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body
+
+  const user = await User.findById(req.user?._id)
+
+  const isPasswordValid = await user.isPasswordCorrect(oldPassword)
+
+  if (!isPasswordValid) {
+    throw new ApiError(400, "Invalid old password")
+  }
+
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"))
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  // Check if user has uploaded an avatar
+  if (!req.file?.filename) 
+    throw new ApiError(400, "Avatar image is required")
+
+  // handle file on own later
+  // const avatarUrl = getStaticFilePath(req, req.file?.filename)
+  // const avatarLocalPath = getLocalPath(req.file?.filename)
+
+  const user = await User.findById(req.user._id)
+
+  let updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+
+    {
+      $set: {
+        // set the newly uploaded avatar
+        avatar: {
+          url: avatarUrl,
+          localPath: avatarLocalPath,
+        },
+      },
+    },
+    { new: true }
+  ).select(
+    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
+  )
+
+  // removeLocalFile(user.avatar.localPath)
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"))
+})
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  verifyEmail,
+  refreshAccessToken,
+  forgotPasswordRequest,
+  resetForgottenPassword,
+  changeCurrentPassword,
+  getCurrentUser, 
+  updateUserAvatar
+}
