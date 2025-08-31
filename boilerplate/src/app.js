@@ -42,7 +42,7 @@ app.use(limiter)
 app.use(morganMiddleware)
 
 // importing routes
-import healthcheckRouter from "./routes/healthcheck.routes.js"
+import healthcheckRouter from "./routes/healthCheck.routes.js"
 import authRouter from "./routes/auth.routes.js"
 
 // decalring routes
