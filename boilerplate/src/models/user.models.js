@@ -2,7 +2,7 @@ import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
-import { UserRolesEnum, AvailableUserRoles } from "../constants.js"
+import { UserRolesEnum, AvailableUserRoles, USER_TEMPORARY_TOKEN_EXPIRY } from "../constants.js"
 
 const userSchema = new mongoose.Schema(
   {

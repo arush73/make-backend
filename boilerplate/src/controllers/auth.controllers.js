@@ -25,7 +25,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { username, email, password } = req.body
 
-  const existingUser = await User.finOne({
+  const existingUser = await User.findOne({
     $or: [{ username }, { email }],
   })
   if (existingUser)
@@ -130,7 +130,5 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, {}, "User logged out"))
 })
-
-
 
 export { registerUser, loginUser, logoutUser }

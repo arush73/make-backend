@@ -6,8 +6,8 @@ const sendMail = async (options) => {
   const mailGenerator = new Mailgen({
     theme: "default",
     product: {
-      name: "",
-      link: "",
+      name: "boilerplate",
+      link: "http://localhost:8080",
     },
   })
 
@@ -15,17 +15,25 @@ const sendMail = async (options) => {
 
   const emailHTML = mailGenerator.generate(options.mailgenContent)
 
+  // const transporter = nodemailer.createTransport({
+  //   host: process.env.MAILTRAP_SMTP_HOST,
+  //   port: process.env.MAILTRAP_SMTP_PORT,
+  //   auth: {
+  //     user: process.env.MAILTRAP_SMTP_USER,
+  //     pass: process.env.MAILTRAP_SMTP_PASS,
+  //   },
+  // })
+
   const transporter = nodemailer.createTransport({
-    host: process.env.MAILTRAP_SMTP_HOST,
-    port: process.env.MAILTRAP_SMTP_PORT,
+    service: "gmail",
     auth: {
-      user: process.env.MAILTRAP_SMTP_USER,
-      pass: process.env.MAILTRAP_SMTP_PASS,
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASSWORD,
     },
   })
 
   const mail = {
-    from: "",
+    from: "boilerplatebackend@gmail.com",
     to: options.email,
     subject: options.subject,
     text: emailTextual,
