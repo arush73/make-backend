@@ -33,4 +33,47 @@ const loginUserSchema = z.object({
     ),
 })
 
-export { registerUserSchema, loginUserSchema }
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+})
+
+const resetForgottenPasswordSchema = z.object({
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .regex(/[a-z]/, "Password must contain at least one alphabetic character.")
+    .regex(/[0-9]/, "Password must contain at least one number.")
+    .regex(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character."
+    ),
+})
+
+const changeCurrentPasswordSchema = z.object({
+  oldPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .regex(/[a-z]/, "Password must contain at least one alphabetic character.")
+    .regex(/[0-9]/, "Password must contain at least one number.")
+    .regex(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character."
+    ),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .regex(/[a-z]/, "Password must contain at least one alphabetic character.")
+    .regex(/[0-9]/, "Password must contain at least one number.")
+    .regex(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character."
+    ),
+})
+
+export {
+  registerUserSchema,
+  loginUserSchema,
+  forgotPasswordSchema,
+  resetForgottenPasswordSchema,
+  changeCurrentPasswordSchema,
+}

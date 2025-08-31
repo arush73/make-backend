@@ -5,6 +5,8 @@ import User from "../models/user.models.js"
 import {
   registerUserSchema,
   loginUserSchema,
+  forgotPasswordSchema,
+  resetForgottenPasswordSchema,
 } from "../validators/auth.validators.js"
 import { UserRolesEnum } from "../constants.js"
 import { emailVerificationMailgenContent, sendMail } from "../utils/mail.js"
@@ -201,6 +203,13 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 const forgotPasswordRequest = asyncHandler(async (req, res) => {
+  const validate = forgotPasswordSchema.safeParse(req.body)
+  if (!validate.success)
+    throw new ApiError(
+      401,
+      validate.error.issues.map((mess) => mess.message)
+    )
+
   const { email } = req.body
 
   const user = await User.findOne({ email })
@@ -236,6 +245,13 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
 })
 
 const resetForgottenPassword = asyncHandler(async (req, res) => {
+  const validate = resetForgottenPasswordSchema.safeParse(req.body)
+  if (!validate.success)
+    throw new ApiError(
+      401,
+      validate.error.issues.map((mess) => mess.message)
+    )
+
   const { resetToken } = req.params
   const { newPassword } = req.body
 
@@ -259,6 +275,13 @@ const resetForgottenPassword = asyncHandler(async (req, res) => {
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const validate = resetForgottenPasswordSchema.safeParse(req.body)
+  if (!validate.success)
+    throw new ApiError(
+      401,
+      validate.error.issues.map((mess) => mess.message)
+    )
+
   const { oldPassword, newPassword } = req.body
 
   const user = await User.findById(req.user?._id)
@@ -283,10 +306,10 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
+// to be done !!!
 const updateUserAvatar = asyncHandler(async (req, res) => {
   // Check if user has uploaded an avatar
-  if (!req.file?.filename) 
-    throw new ApiError(400, "Avatar image is required")
+  if (!req.file?.filename) throw new ApiError(400, "Avatar image is required")
 
   // handle file on own later
   // const avatarUrl = getStaticFilePath(req, req.file?.filename)
@@ -327,6 +350,6 @@ export {
   forgotPasswordRequest,
   resetForgottenPassword,
   changeCurrentPassword,
-  getCurrentUser, 
-  updateUserAvatar
+  getCurrentUser,
+  updateUserAvatar,
 }
