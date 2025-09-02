@@ -80,12 +80,12 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 const loginUser = asyncHandler(async (req, res) => {
-  // const validate = loginUserSchema.safeParse()
-  // if (!validate.success)
-  //   throw new ApiError(
-  //     400,
-  //     validate.error.issues.map((mess) => mess.message)
-  //   )
+  const validate = loginUserSchema.safeParse(req.body)
+  if (!validate.success)
+    throw new ApiError(
+      400,
+      validate.error.issues.map((mess) => mess.message)
+    )
 
   const { email, username, password } = req.body
 
