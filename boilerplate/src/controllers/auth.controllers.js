@@ -10,6 +10,7 @@ import {
 } from "../validators/auth.validators.js"
 import { UserRolesEnum } from "../constants.js"
 import { emailVerificationMailgenContent, sendMail } from "../utils/mail.js"
+import crypto from "crypto"
 
 const cookieOptions = () => {
   return {
@@ -359,17 +360,20 @@ const handleSocialLogin = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist")
   }
 
-  const accessToken = generateAccessToken()
-  const refreshToken = generateRefreshToken()
+  const accessToken = user.generateAccessToken()
+  const refreshToken = user.generateRefreshToken()
 
-  return res
-    .status(301)
-    .cookie("accessToken", accessToken, cookieOptions) // set the access token in the cookie
-    .cookie("refreshToken", refreshToken, cookieOptions) // set the refresh token in the cookie
-    .redirect(
-      // redirect user to the frontend with access and refresh token in case user is not using cookies
-      `${process.env.CLIENT_SSO_REDIRECT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
-    )
+  return (
+    res
+      .status(301)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      // .redirect(
+      //   // redirect user to the frontend with access and refresh token in case user is not using cookies
+      //   `${process.env.CLIENT_SSO_REDIRECT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
+      // )
+      .json(new ApiResponse(200, "user created sucessfully via google", user))
+  )
 })
 
 export {

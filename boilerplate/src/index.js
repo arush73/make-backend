@@ -1,16 +1,14 @@
 import dotenv from "dotenv"
-import connectDB from "./utils/db.js"
 dotenv.config()
 
+import connectDB from "./utils/db.js"
 import logger from "./logger/winston.logger.js"
 import app from "./app.js"
 
 const startServer = () => {
   app.listen(process.env.PORT || 8080, () => {
     logger.info(
-      `📑 visit the server at: http://localhost:${
-        process.env.PORT || 8080
-      }`
+      `📑 visit the server at: http://localhost:${process.env.PORT || 8080}`
     )
     logger.info("⚙️  Server is running on port: " + process.env.PORT)
   })
@@ -18,7 +16,7 @@ const startServer = () => {
 
 connectDB()
   .then(() => {
-   startServer()
+    startServer()
   })
   .catch((err) => {
     logger.error("Mongo db connect error: ", err)
