@@ -14,13 +14,11 @@ cloudinary.config({
 const uploadCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null
-    console.log("From cloud: ", localFilePath)
 
     const upload = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     })
 
-    console.log("this is main uplaod: " , upload)
     return upload 
 
     fs.unlinkSync(localFilePath)

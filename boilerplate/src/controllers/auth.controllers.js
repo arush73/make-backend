@@ -323,11 +323,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!req.file?.filename) throw new ApiError(400, "Avatar image is required")
 
   const avatarLocalPath = req.file.path
-  console.log("avatarLocalPath: ", avatarLocalPath)
 
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required")
   const avatar = await uploadCloudinary(avatarLocalPath)
-console.log("printing from cont: " , avatar)
   if (!avatar) throw new ApiError(400, "failed to upload on cloudinary")
 
   const user = await User.findById(req.user._id)
