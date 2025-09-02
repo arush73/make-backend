@@ -8,9 +8,10 @@ import {
   forgotPasswordSchema,
   resetForgottenPasswordSchema,
 } from "../validators/auth.validators.js"
-import { UserRolesEnum } from "../constants.js"
+import { UserRolesEnum , UserLoginType} from "../constants.js"
 import { emailVerificationMailgenContent, sendMail } from "../utils/mail.js"
 import crypto from "crypto"
+import { uploadCloudinary } from "../utils/cloudinary.js"
 
 const cookieOptions = () => {
   return {
@@ -79,12 +80,12 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 const loginUser = asyncHandler(async (req, res) => {
-  const validate = loginUserSchema.safeParse()
-  if (!validate.success)
-    throw new ApiError(
-      400,
-      validate.error.issues.map((mess) => mess.message)
-    )
+  // const validate = loginUserSchema.safeParse()
+  // if (!validate.success)
+  //   throw new ApiError(
+  //     400,
+  //     validate.error.issues.map((mess) => mess.message)
+  //   )
 
   const { email, username, password } = req.body
 
@@ -318,14 +319,16 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
-// to be done !!!
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  // Check if user has uploaded an avatar
   if (!req.file?.filename) throw new ApiError(400, "Avatar image is required")
 
-  // handle file on own later
-  // const avatarUrl = getStaticFilePath(req, req.file?.filename)
-  // const avatarLocalPath = getLocalPath(req.file?.filename)
+  const avatarLocalPath = req.file.path
+  console.log("avatarLocalPath: ", avatarLocalPath)
+
+  if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required")
+  const avatar = await uploadCloudinary(avatarLocalPath)
+console.log("printing from cont: " , avatar)
+  if (!avatar) throw new ApiError(400, "failed to upload on cloudinary")
 
   const user = await User.findById(req.user._id)
 
@@ -334,19 +337,13 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     {
       $set: {
-        // set the newly uploaded avatar
-        avatar: {
-          url: avatarUrl,
-          localPath: avatarLocalPath,
-        },
+        avatar:avatar.url
       },
     },
     { new: true }
   ).select(
     "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
   )
-
-  // removeLocalFile(user.avatar.localPath)
 
   return res
     .status(200)

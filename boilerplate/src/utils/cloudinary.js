@@ -2,6 +2,8 @@ import { v2 as cloudinary } from "cloudinary"
 import logger from "../logger/winston.logger.js"
 import fs from "fs"
 import { ApiError } from "../utils/ApiError.js"
+import dotenv from "dotenv"
+dotenv.config()
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,10 +14,14 @@ cloudinary.config({
 const uploadCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null
+    console.log("From cloud: ", localFilePath)
 
     const upload = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     })
+
+    console.log("this is main uplaod: " , upload)
+    return upload 
 
     fs.unlinkSync(localFilePath)
   } catch (err) {
@@ -38,7 +44,7 @@ const deleteCloudinary = async (cloudinaryUrl) => {
     if (!publicId)
       throw new ApiError(404, "Unable to extract publicId from Cloudinary URL")
 
-      const response = await cloudinary.uploader.destroy(publicId)
+    const response = await cloudinary.uploader.destroy(publicId)
   } catch (err) {
     logger.error(err.message)
     return null

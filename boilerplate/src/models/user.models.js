@@ -13,14 +13,8 @@ import {
 const userSchema = new mongoose.Schema(
   {
     avatar: {
-      type: {
-        url: String,
-        localPath: String,
-      },
-      default: {
-        url: `https://via.placeholder.com/200x200.png`,
-        localPath: "",
-      },
+      type: String,
+      default: `https://via.placeholder.com/200x200.png`,
     },
     username: {
       type: String,
@@ -80,6 +74,10 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 10)
   next()
 })
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password,this.password)
+}
 
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
