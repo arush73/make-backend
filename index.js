@@ -16,6 +16,7 @@ console.log(`✅ Project ${projectName} created`);
 console.log("\n\n\n\n");
 
 try {
+  execSync(`cd ${projectName}`, { stdio: "inherit" });
   execSync("git init", { stdio: "inherit" });
   execSync("git add .", { stdio: "inherit" });
   execSync('git commit -m "Initial commit -- basic server setup"', {
